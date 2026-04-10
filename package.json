@@ -1,0 +1,23 @@
+{
+  "name": "fumugold-v3",
+  "version": "3.1.0",
+  "description": "FumuGold — Sistema Médico Integrado com IA · Angola",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --port=3000 --host=0.0.0.0",
+    "build": "vite build",
+    "preview": "vite preview --port=3000",
+    "lint": "echo 'No linter configured'"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.102.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "three": "^0.168.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "vite": "^5.4.10"
+  }
+}

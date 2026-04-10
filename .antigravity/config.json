@@ -1,0 +1,7 @@
+﻿{
+  "runtime": {
+    "default": "node",
+    "force": "node",
+    "block": ["bun", "bunx"]
+  }
+}
