@@ -5,36 +5,31 @@ export default defineConfig({
   plugins: [react()],
 
   server: {
-    port:  3000,
-    host:  '0.0.0.0',
-    open:  false,
-    // B13-FIX: removido proxy para :3001 (servidor Express não existe no projecto)
-    // Se precisares de proxy para proteger chaves API, adiciona um server.ts
-    // e activa abaixo:
-    // proxy: {
-    //   '/api': { target: 'http://localhost:3001', changeOrigin: true },
-    // },
+    port: 3000,
+    host: '0.0.0.0',
+    open: false,
   },
 
   build: {
-    outDir:        'dist',
-    sourcemap:     false,
+    outDir: 'dist',
+    sourcemap: false,
     chunkSizeWarningLimit: 2000,
     rollupOptions: {
       output: {
         manualChunks: {
           three: ['three'],
           react: ['react', 'react-dom'],
+          supabase: ['@supabase/supabase-js'],
         },
       },
     },
   },
 
   optimizeDeps: {
-    include: ['react', 'react-dom', 'three'],
+    include: ['react', 'react-dom', 'three', '@supabase/supabase-js'],
   },
 
   define: {
-    __APP_VERSION__: JSON.stringify('3.1.0'),
+    __APP_VERSION__: JSON.stringify('3.2.0'),
   },
 });

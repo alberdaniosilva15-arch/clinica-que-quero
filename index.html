@@ -113,19 +113,30 @@ html, body { width:100%; height:100%; overflow:hidden; background: #000; font-fa
 <script type="module" src="/src/main.jsx"></script>
 
 <script>
-const urlParams = new URLSearchParams(window.location.search);
-const showApp = urlParams.get('app') === 'true';
+function hasValidSession(){
+  try{
+    const sb=JSON.parse(localStorage.getItem('fg_sb_auth')||'null');
+    if(sb?.access_token&&sb?.expires_at&&Date.now()<sb.expires_at*1000)return true;
+  }catch{}
+  try{
+    const dev=JSON.parse(localStorage.getItem('fg_session')||'null');
+    if(dev?._dev&&dev?.createdAt&&(Date.now()-dev.createdAt)<28800000)return true;
+  }catch{}
+  return false;
+}
+const urlParams=new URLSearchParams(window.location.search);
+const showApp=urlParams.get('app')==='true'||hasValidSession();
 
-if (showApp) {
-  window.history.replaceState({}, document.title, window.location.pathname);
-  document.getElementById('loader').style.display = 'none';
-  document.getElementById('canvas-container').style.display = 'none';
-  document.getElementById('panel').style.display = 'none';
-  document.getElementById('header').style.display = 'none';
-  document.getElementById('cd').style.display = 'none';
-  document.getElementById('cr').style.display = 'none';
-  document.getElementById('root').style.display = 'block';
+if(showApp){
+  window.history.replaceState({},document.title,window.location.pathname);
+  ['loader','canvas-container','panel','header','cd','cr'].forEach(id=>{
+    const el=document.getElementById(id);if(el)el.style.display='none';
+  });
+  document.getElementById('root').style.display='block';
+  if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js').catch(()=>{});
 } else {
+  window.location.replace('./login.html');
+}
 const scene = new THREE.Scene();
 scene.fog = new THREE.FogExp2(0x000000, 0.01);
 

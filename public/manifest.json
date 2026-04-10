@@ -1,0 +1,38 @@
+{
+  "name": "FumuGold — Sistema Clínico",
+  "short_name": "FumuGold",
+  "description": "Sistema de Gestão Clínica Inteligente para Angola",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#D4AF37",
+  "orientation": "any",
+  "lang": "pt",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["medical", "health", "productivity"],
+  "shortcuts": [
+    {
+      "name": "Novo Paciente",
+      "url": "/?app=true&action=new-patient",
+      "description": "Registar novo paciente"
+    },
+    {
+      "name": "Agenda",
+      "url": "/?app=true&action=agenda",
+      "description": "Ver agenda do dia"
+    }
+  ]
+}
