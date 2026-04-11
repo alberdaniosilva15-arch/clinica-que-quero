@@ -1,47 +1,46 @@
 // ═══════════════════════════════════════════════════════════
-// FUMUGOLD — Entry Point FINAL v3.1
-// Ordem de inicialização crítica:
-//   1. window.storage reactivo
-//   2. Multi-clínica interceptor
-//   3. ARIA Bridge v2 (DeepSeek + Groq)
-//   4. React + V3 LOCKED render
-//   5. Serviços pós-render (WA AI, Billing, EHR, etc.)
+// FUMUGOLD — Entry Point v3.2 (Supabase Auth + PWA)
 // ═══════════════════════════════════════════════════════════
-
-// ── 0. THREE.js global ─────────────────────────────────────
 import * as THREE from 'three';
 window.THREE = THREE;
 
-// ── 1. Storage reactivo ───────────────────────────────────
-;(function() {
-  if (typeof window === 'undefined' || window._fg_storage_ok) return;
-  window._fg_storage_ok = true;
-  const _cbs = {};
-  window.storage = {
-    get:    async (k) => { try { const v=localStorage.getItem(k); return v?{key:k,value:v}:null; } catch { return null; } },
-    set:    async (k,v) => { try { const s=typeof v==='string'?v:JSON.stringify(v); localStorage.setItem(k,s); (_cbs[k]||[]).forEach(fn=>{try{fn(s);}catch{}}); return {key:k,value:s}; } catch { return null; } },
-    delete: async (k) => { try { localStorage.removeItem(k); return {key:k,deleted:true}; } catch { return null; } },
-    list:   async (p) => { try { const ks=Object.keys(localStorage).filter(k=>!p||k.startsWith(p)); return {keys:ks}; } catch { return {keys:[]}; } },
-    _subscribe: (key,fn) => { if(!_cbs[key])_cbs[key]=[]; _cbs[key].push(fn); return ()=>{ _cbs[key]=(_cbs[key]||[]).filter(f=>f!==fn); }; },
+// ── Storage reactivo ──────────────────────────────────────
+;(function(){
+  if(window._fg_storage_ok)return;
+  window._fg_storage_ok=true;
+  const _cbs={};
+  window.storage={
+    get:    async k=>{try{const v=localStorage.getItem(k);return v?{key:k,value:v}:null;}catch{return null;}},
+    set:    async(k,v)=>{try{const s=typeof v==='string'?v:JSON.stringify(v);localStorage.setItem(k,s);(_cbs[k]||[]).forEach(fn=>{try{fn(s);}catch{}});return{key:k,value:s};}catch{return null;}},
+    delete: async k=>{try{localStorage.removeItem(k);return{key:k,deleted:true};}catch{return null;}},
+    list:   async p=>{try{const ks=Object.keys(localStorage).filter(k=>!p||k.startsWith(p));return{keys:ks};}catch{return{keys:[]};}},
+    _subscribe:(key,fn)=>{if(!_cbs[key])_cbs[key]=[];_cbs[key].push(fn);return()=>{_cbs[key]=(_cbs[key]||[]).filter(f=>f!==fn);};},
   };
 })();
 
-// ── 2. Multi-clínica interceptor ──────────────────────────
+// ── Multi-clínica ─────────────────────────────────────────
 import { installClinicInterceptor, getClinicId, migrateLocalData } from './lib/multi_clinic.js';
 installClinicInterceptor();
 
-// ── 3. ARIA Bridge v2 ─────────────────────────────────────
+// ── ARIA Bridge ───────────────────────────────────────────
 import { installARIABridge, updateClinicSnapshot } from './lib/aria_bridge_v2.js';
 installARIABridge();
 
-// ── 4. React + V3 ─────────────────────────────────────────
+// ── Supabase Auth ─────────────────────────────────────────
+import {
+  getSupabaseClient, getInitialSession, subscribeAuth,
+  mapSupabaseUserToAppSession, signOutSupabase,
+} from './lib/supabase_auth.js';
+
+// ── React ─────────────────────────────────────────────────
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import FumuGold from './FumuGold_V3_ARIA_visual.jsx';
+import ErrorBoundary from './ErrorBoundary.jsx';
 
-// ── 5. Serviços ───────────────────────────────────────────
-import { startWhatsAppRealtime }                        from './lib/whatsapp_realtime.js';
-import { installBillingUI, exportInvoicePDF, exportAllPDF } from './lib/billing_service.js';
+// ── Serviços ──────────────────────────────────────────────
+import { startWhatsAppRealtime }                              from './lib/whatsapp_realtime.js';
+import { installBillingUI, exportInvoicePDF, exportAllPDF }  from './lib/billing_service.js';
 import { createInvoice, addPayment, getBillingStats, exportInvoiceXML, createFromFlow } from './lib/billing_advanced.js';
 import { createFlow, advanceFlow, getActiveFlows, getTodayStats } from './lib/clinical_flow.js';
 import { logAction, setCurrentUser, validateRLS, getLogs, clearOldLogs } from './lib/audit_log.js';
@@ -51,108 +50,88 @@ import { processIncoming, classify, suggestReply, saveWASettings } from './lib/w
 import { aiRouter, clinicalReason, quickReply, saveGroqKey } from './lib/ai_router.js';
 import { getClinicMeta, setClinicMeta } from './lib/multi_clinic.js';
 
-// ── Render ────────────────────────────────────────────────
-createRoot(document.getElementById('root')).render(
-  <React.StrictMode><FumuGold /></React.StrictMode>
-);
+// ── Guard de autenticação ─────────────────────────────────
+async function initAuth(){
+  const client=getSupabaseClient();
+  if(!client){
+    const dev=JSON.parse(localStorage.getItem('fg_session')||'null');
+    if(dev?._dev){window.__fg_session=dev;return true;}
+    window.location.replace('./login.html');return false;
+  }
+  const session=await getInitialSession();
+  if(!session){window.location.replace('./login.html');return false;}
+  const app=mapSupabaseUserToAppSession(session);
+  window.__fg_session=app;
+  if(app?.clinic_id)localStorage.setItem('fg_clinic_id',app.clinic_id);
+  setCurrentUser(app?.nome||app?.email||'?');
+  return true;
+}
 
-// ── Serviços pós-render ───────────────────────────────────
-let _stopWA = null;
+// ── PWA: escuta mensagens do SW (sync offline) ────────────
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.addEventListener('message',e=>{
+    if(e.data?.type==='FG_SYNC_START'){
+      updateClinicSnapshot();
+    }
+  });
+}
 
-window.addEventListener('load', () => {
-  setTimeout(async () => {
+// ── Bootstrap ─────────────────────────────────────────────
+(async()=>{
+  const ok=await initAuth();
+  if(!ok)return;
 
-    // Snapshot inicial ARIA
-    updateClinicSnapshot();
+  createRoot(document.getElementById('root')).render(
+    <React.StrictMode>
+      <ErrorBoundary>
+        <FumuGold/>
+      </ErrorBoundary>
+    </React.StrictMode>
+  );
 
-    // Migração multi-clínica (adiciona clinic_id a dados existentes)
-    try { migrateLocalData(); } catch {}
+  window.addEventListener('load',()=>{
+    setTimeout(async()=>{
+      updateClinicSnapshot();
+      try{migrateLocalData();}catch{}
+      try{startWhatsAppRealtime();}catch(e){console.warn('[FG] WA:',e.message);}
+      try{installBillingUI();}catch(e){console.warn('[FG] Billing:',e.message);}
+      try{clearOldLogs(30);}catch{}
+      validateRLS().catch(()=>{});
 
-    // WhatsApp Realtime
-    try { _stopWA = startWhatsAppRealtime(); }
-    catch (e) { console.warn('[FG] WA Realtime:', e.message); }
+      subscribeAuth((event,session)=>{
+        if(event==='SIGNED_OUT'||(!session&&event==='TOKEN_REFRESHED')){
+          window.location.replace('./login.html');
+        }
+        if(event==='TOKEN_REFRESHED'&&session){
+          window.__fg_session=mapSupabaseUserToAppSession(session);
+        }
+      });
 
-    // Billing UI (botões PDF nas tabelas)
-    try { installBillingUI(); }
-    catch (e) { console.warn('[FG] Billing UI:', e.message); }
+      window.__fg={
+        version:'3.2.0',
+        auth:{
+          getSession:()=>window.__fg_session,
+          signOut:async()=>{
+            await signOutSupabase();
+            localStorage.removeItem('fg_session');
+            localStorage.removeItem('fg_clinic_id');
+            window.location.replace('./login.html');
+          },
+          getClient:getSupabaseClient,
+        },
+        clinic:{getId:getClinicId,getMeta:getClinicMeta,setMeta:setClinicMeta},
+        billing:{create:createInvoice,createFromFlow,addPayment,exportPDF:exportInvoicePDF,exportAll:exportAllPDF,exportXML:exportInvoiceXML,getStats:getBillingStats,getInvoices:()=>JSON.parse(localStorage.getItem('clinic_invoices')||'[]')},
+        flow:{create:createFlow,advance:advanceFlow,getActive:getActiveFlows,getStats:getTodayStats},
+        ehr:{addEvolution,getEvolutions,addVitalSigns,getSummary:getEHRSummary,buildContext:buildEHRContext},
+        dosage:{calculate,checkInteractions,format:formatResult,drugs:getDrugList},
+        wa:{process:processIncoming,classify,suggest:suggestReply,saveSettings:saveWASettings},
+        ai:{router:aiRouter,clinical:clinicalReason,quick:quickReply,saveGroqKey,getMetrics:()=>aiRouter.getMetrics()},
+        audit:{log:logAction,getLogs,setUser:setCurrentUser,validateRLS},
+        utils:{refresh:updateClinicSnapshot},
+      };
 
-    // Audit cleanup
-    try { clearOldLogs(30); } catch {}
-
-    // RLS validation em background
-    const supaUrl = localStorage.getItem('fg_supabase_url') || '';
-    if (supaUrl) validateRLS().catch(() => {});
-
-    // ── API global window.__fg ────────────────────────────
-    window.__fg = {
-      version: '3.1.0',
-      clinic: {
-        getId:    getClinicId,
-        getMeta:  getClinicMeta,
-        setMeta:  setClinicMeta,
-      },
-      billing: {
-        create:         createInvoice,
-        createFromFlow, // B10-FIX: importado estaticamente acima (não await import())
-        addPayment,
-        exportPDF:      exportInvoicePDF,
-        exportAll:      exportAllPDF,
-        exportXML:      exportInvoiceXML,
-        getStats:       getBillingStats,
-        getInvoices:    () => JSON.parse(localStorage.getItem('clinic_invoices') || '[]'),
-      },
-      flow: {
-        create:    createFlow,
-        advance:   advanceFlow,
-        getActive: getActiveFlows,
-        getStats:  getTodayStats,
-      },
-      ehr: {
-        addEvolution,
-        getEvolutions,
-        addVitalSigns,
-        getSummary: getEHRSummary,
-        buildContext: buildEHRContext,
-      },
-      dosage: {
-        calculate,
-        checkInteractions,
-        format: formatResult,
-        drugs:  getDrugList,
-      },
-      wa: {
-        process:     processIncoming,
-        classify,
-        suggest:     suggestReply,
-        saveSettings: saveWASettings,
-      },
-      ai: {
-        router:    aiRouter,
-        clinical:  clinicalReason,
-        quick:     quickReply,
-        saveGroqKey,
-        getMetrics: () => aiRouter.getMetrics(),
-      },
-      audit: {
-        log:         logAction,
-        getLogs,
-        setUser:     setCurrentUser,
-        validateRLS,
-      },
-      utils: {
-        refresh: updateClinicSnapshot,
-        stopWA:  () => _stopWA?.(),
-      },
-    };
-
-    console.info('%cFumuGold V3.1 — Sistema Clínico Inteligente ✓',
-      'color:#D4AF37;font-family:monospace;font-size:13px;font-weight:bold;letter-spacing:2px');
-    console.info('%cARIA v2 · Multi-Clínica · EHR · Dosagem · WA AI · Billing Angola',
-      'color:#00FF88;font-size:10px;font-family:monospace');
-    console.info('%cAPI: window.__fg  |  Clínica: ' + getClinicId(),
-      'color:#9A8A5A;font-size:10px;font-family:monospace');
-
-  }, 2500);
-});
-
-window.addEventListener('beforeunload', () => { try { _stopWA?.(); } catch {} });
+      console.info('%cFumuGold V3.2 ✓','color:#D4AF37;font-family:monospace;font-size:13px;font-weight:bold;letter-spacing:2px');
+      console.info('%cAuth: Supabase | PWA: activo | Clínica: '+getClinicId(),'color:#00FF88;font-size:10px;font-family:monospace');
+    },2500);
+  });
+})();

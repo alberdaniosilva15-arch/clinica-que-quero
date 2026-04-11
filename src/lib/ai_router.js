@@ -20,12 +20,16 @@ export const AI_MODELS = {
 
   // Tier 3 — Raciocínio rápido Groq
   GROQ_R1_DISTILL: 'deepseek-r1-distill-llama-70b',
+
+  // Tier NVIDIA NIM (Enterprise)
+  NVIDIA_LLAMA70B: 'meta/llama-3.1-70b-instruct',
 };
 
 // B11-FIX: import.meta.env lido no top-level (Vite substitui em compile time)
 // try/catch em import.meta.env nunca executa — o catch era código morto
-const _ENV_OR_KEY   = import.meta.env.VITE_OPENROUTER_KEY  || '';
-const _ENV_GROQ_KEY = import.meta.env.VITE_GROQ_KEY        || '';
+const _ENV_OR_KEY     = import.meta.env.VITE_OPENROUTER_KEY  || '';
+const _ENV_GROQ_KEY   = import.meta.env.VITE_GROQ_KEY        || '';
+const _ENV_NVIDIA_KEY = import.meta.env.VITE_NVIDIA_KEY      || '';
 
 // ── Classe AIRouter ───────────────────────────────────────
 class AIRouter {
@@ -39,11 +43,13 @@ class AIRouter {
   }
 
   // B11-FIX: usa constantes top-level — localStorage como fallback real
-  _orKey()   { return _ENV_OR_KEY   || localStorage.getItem('fg_openrouter_key') || ''; }
-  _groqKey() { return _ENV_GROQ_KEY || localStorage.getItem('fg_groq_key')       || ''; }
+  _orKey()     { return _ENV_OR_KEY     || localStorage.getItem('fg_openrouter_key') || ''; }
+  _groqKey()   { return _ENV_GROQ_KEY   || localStorage.getItem('fg_groq_key')       || ''; }
+  _nvidiaKey() { return _ENV_NVIDIA_KEY || ''; }
 
-  _orUrl() { return 'https://openrouter.ai/api/v1/chat/completions'; }
-  _groqUrl() { return 'https://api.groq.com/openai/v1/chat/completions'; }
+  _orUrl()     { return 'https://openrouter.ai/api/v1/chat/completions'; }
+  _groqUrl()   { return 'https://api.groq.com/openai/v1/chat/completions'; }
+  _nvidiaUrl() { return 'https://integrate.api.nvidia.com/v1/chat/completions'; }
 
   // ── Método central: chat com routing automático ─────────
   async chat(opts = {}) {
@@ -69,6 +75,9 @@ class AIRouter {
 
     try {
       switch (tier) {
+        case 0:
+          ({ result, usedModel } = await this._callNvidia(messages, systemPrompt, maxTokens, temperature, stream, onChunk, onDone));
+          break;
         case 1:
           ({ result, usedModel } = await this._callDeepSeek(messages, systemPrompt, maxTokens, temperature, stream, onChunk, onDone));
           break;
@@ -79,7 +88,11 @@ class AIRouter {
           ({ result, usedModel } = await this._callGroq(messages, systemPrompt, maxTokens, temperature, stream, onChunk, onDone, AI_MODELS.GROQ_GEMMA));
           break;
         default:
-          ({ result, usedModel } = await this._callDeepSeek(messages, systemPrompt, maxTokens, temperature, stream, onChunk, onDone));
+          if (this._nvidiaKey()) {
+             ({ result, usedModel } = await this._callNvidia(messages, systemPrompt, maxTokens, temperature, stream, onChunk, onDone));
+          } else {
+             ({ result, usedModel } = await this._callDeepSeek(messages, systemPrompt, maxTokens, temperature, stream, onChunk, onDone));
+          }
       }
     } catch (e) {
       this._metrics.errors++;
@@ -96,12 +109,50 @@ class AIRouter {
 
   // ── Tier selector ────────────────────────────────────────
   _selectTier(intent) {
+    // Se tiver NVIDIA NIM, é o Tier 0 (Prioridade máxima/Enterprise)
+    if (this._nvidiaKey()) return 0;
+
     // Clínico complexo → DeepSeek R1 (Tier 1)
     if (['clinical_reason', 'dosage', 'diagnosis'].includes(intent)) return 1;
     // Resposta rápida → Groq (Tier 2)
     if (['quick_reply', 'wa_reply', 'classify', 'summary'].includes(intent)) return 2;
     // Groq rápido (Tier 2) se tivermos chave, senão DeepSeek (Tier 1)
     return this._groqKey() ? 2 : 1;
+  }
+
+  // ── Tier 0: NVIDIA NIM ──────────────────────────────────
+  async _callNvidia(messages, systemPrompt, maxTokens, temperature, stream, onChunk, onDone) {
+    const key = this._nvidiaKey();
+    const allMsgs = systemPrompt
+      ? [{ role: 'system', content: systemPrompt }, ...messages]
+      : messages;
+
+    const res = await fetch(this._nvidiaUrl(), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${key}`,
+      },
+      body: JSON.stringify({
+        model: AI_MODELS.NVIDIA_LLAMA70B,
+        messages: allMsgs,
+        max_tokens: maxTokens,
+        temperature,
+        stream
+      }),
+      signal: AbortSignal.timeout(30000),
+    });
+
+    if (!res.ok) throw new Error(`NVIDIA NIM ${res.status}`);
+
+    if (stream && res.body) {
+      const content = await this._readStream(res.body, onChunk, onDone, false);
+      return { content, model: AI_MODELS.NVIDIA_LLAMA70B };
+    }
+
+    const data = await res.json();
+    const content = data.choices?.[0]?.message?.content || '';
+    return { content, model: AI_MODELS.NVIDIA_LLAMA70B };
   }
 
   // ── Tier 1: DeepSeek via OpenRouter ─────────────────────

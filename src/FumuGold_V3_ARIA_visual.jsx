@@ -36,17 +36,8 @@ import {
   auditInvoicesDiff,
   auditStockDiff,
 } from "./lib/entity_audit.js";
+import { useDebouncedEffect } from './hooks/useDebouncedEffect.js';
 import { setCurrentUser, logAction, AUDIT_ACTIONS } from "./lib/audit_log.js";
-
-/* ── window.storage polyfill ── */
-if(typeof window!=='undefined'&&!window.storage){
-  window.storage={
-    get:async(k)=>{try{const v=localStorage.getItem(k);return v?{key:k,value:v}:null;}catch(e){return null;}},
-    set:async(k,v)=>{try{const s=typeof v==='string'?v:JSON.stringify(v);localStorage.setItem(k,s);return{key:k,value:s};}catch(e){return null;}},
-    delete:async(k)=>{try{localStorage.removeItem(k);return{key:k,deleted:true};}catch(e){return null;}},
-    list:async(p)=>{try{const ks=Object.keys(localStorage).filter(k=>!p||k.startsWith(p));return{keys:ks};}catch(e){return{keys:[]};}}
-  };
-}
 
 
 /* ═══════════════════════════════════════════════════════════
@@ -786,18 +777,18 @@ function ClinicProvider({children, setTab, threeRef, session}) {
   },[]);
 
   /* Save to storage whenever data changes (only after initial load) */
-  useEffect(()=>{ if(loaded) window.storage.set('clinic_patients', JSON.stringify(patients)); },[patients,loaded]);
-  useEffect(()=>{ if(loaded) window.storage.set('clinic_appointments', JSON.stringify(appointments)); },[appointments,loaded]);
-  useEffect(()=>{ if(loaded) window.storage.set('clinic_labResults', JSON.stringify(labResults)); },[labResults,loaded]);
-  useEffect(()=>{ if(loaded) window.storage.set('clinic_prescriptions', JSON.stringify(prescriptions)); },[prescriptions,loaded]);
-  useEffect(()=>{ if(loaded) window.storage.set('clinic_invoices', JSON.stringify(invoices)); },[invoices,loaded]);
-  useEffect(()=>{ if(loaded) window.storage.set('clinic_stock', JSON.stringify(stockItems)); },[stockItems,loaded]);
-  useEffect(()=>{ if(loaded) window.storage.set('clinic_beds', JSON.stringify(beds)); },[beds,loaded]);
-  useEffect(()=>{ if(loaded) window.storage.set('clinic_staff', JSON.stringify(staff)); },[staff,loaded]);
-  useEffect(()=>{ if(loaded) window.storage.set('clinic_messages', JSON.stringify(messages)); },[messages,loaded]);
-  useEffect(()=>{ if(loaded) window.storage.set('clinic_surgeries', JSON.stringify(surgeries)); },[surgeries,loaded]);
-  useEffect(()=>{ if(loaded) window.storage.set('clinic_notifications', JSON.stringify(notifications)); },[notifications,loaded]);
-  useEffect(()=>{ if(loaded) window.storage.set('clinic_integrations', JSON.stringify(integrations)); },[integrations,loaded]);
+  useDebouncedEffect(()=>{ if(loaded) window.storage.set('clinic_patients', JSON.stringify(patients)); },[patients,loaded], 500);
+  useDebouncedEffect(()=>{ if(loaded) window.storage.set('clinic_appointments', JSON.stringify(appointments)); },[appointments,loaded], 500);
+  useDebouncedEffect(()=>{ if(loaded) window.storage.set('clinic_labResults', JSON.stringify(labResults)); },[labResults,loaded], 500);
+  useDebouncedEffect(()=>{ if(loaded) window.storage.set('clinic_prescriptions', JSON.stringify(prescriptions)); },[prescriptions,loaded], 500);
+  useDebouncedEffect(()=>{ if(loaded) window.storage.set('clinic_invoices', JSON.stringify(invoices)); },[invoices,loaded], 500);
+  useDebouncedEffect(()=>{ if(loaded) window.storage.set('clinic_stock', JSON.stringify(stockItems)); },[stockItems,loaded], 500);
+  useDebouncedEffect(()=>{ if(loaded) window.storage.set('clinic_beds', JSON.stringify(beds)); },[beds,loaded], 500);
+  useDebouncedEffect(()=>{ if(loaded) window.storage.set('clinic_staff', JSON.stringify(staff)); },[staff,loaded], 500);
+  useDebouncedEffect(()=>{ if(loaded) window.storage.set('clinic_messages', JSON.stringify(messages)); },[messages,loaded], 500);
+  useDebouncedEffect(()=>{ if(loaded) window.storage.set('clinic_surgeries', JSON.stringify(surgeries)); },[surgeries,loaded], 500);
+  useDebouncedEffect(()=>{ if(loaded) window.storage.set('clinic_notifications', JSON.stringify(notifications)); },[notifications,loaded], 500);
+  useDebouncedEffect(()=>{ if(loaded) window.storage.set('clinic_integrations', JSON.stringify(integrations)); },[integrations,loaded], 500);
 
   const lastArchiveTsRef = useRef(0);
   const lastSupaSyncTsRef = useRef(0);
@@ -4267,7 +4258,7 @@ function Configuracoes() {
   const [userForm,setUserForm]=useState({nome:'',cargo:'Médico',turno:'Manhã',tel:'',status:'Activo',nivel:'Clínico'});
   const [deleteModal,setDeleteModal]=useState(null); // patient to delete
   const [deletePass,setDeletePass]=useState('');
-  const ADMIN_PASS='fumugold2025'; // change this
+  const ADMIN_PASS = import.meta.env.VITE_ADMIN_PASS || 'fumugold2025';
   const [settings,setSettings]=useState({
     clinicName:'FUMUGOLD ClÃ­nica',clinicPhone:'+244 222 000 111',clinicEmail:'info@fumugold.ao',
     clinicAddress:'Rua da MissÃ£o 45, Luanda',lang:'PortuguÃªs',timezone:'Africa/Luanda',

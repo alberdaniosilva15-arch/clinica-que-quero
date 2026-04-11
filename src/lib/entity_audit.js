@@ -4,13 +4,22 @@
 
 import { logAction, AUDIT_ACTIONS } from './audit_log.js';
 
+function stableStringify(obj) {
+  if (obj instanceof Date) return obj.toISOString();
+  if (obj === undefined) return 'null';
+  if (typeof obj !== 'object' || obj === null) return JSON.stringify(obj);
+  if (Array.isArray(obj)) return `[${obj.map(stableStringify).join(',')}]`;
+  const keys = Object.keys(obj).sort();
+  return `{${keys.map(k => `${JSON.stringify(k)}:${stableStringify(obj[k])}`).join(',')}}`;
+}
+
 function _changedKeys(a, b) {
   if (!a || !b) return [];
   const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
   const out = [];
   keys.forEach((k) => {
     try {
-      if (JSON.stringify(a[k]) !== JSON.stringify(b[k])) out.push(k);
+      if (stableStringify(a[k]) !== stableStringify(b[k])) out.push(k);
     } catch {
       out.push(k);
     }

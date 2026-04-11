@@ -224,7 +224,7 @@ async function _sendReply(phone, text, staffName) {
 async function _escalateToHuman(phone, message, category) {
   try {
     // Lê a conversa actual primeiro para fazer merge seguro
-    const { fetchFromSupabase } = await import('../supabase_sync.js');
+    // Utiliza fetchFromSupabase importado estaticamente
     const rows = await fetchFromSupabase('fg_whatsapp_conversations', {
       filters: [{ col: 'id', op: 'eq', val: phone }],
       limit: 1,
@@ -238,7 +238,7 @@ async function _escalateToHuman(phone, message, category) {
       last_msg: message,
     };
 
-    const { patchSupabase } = await import('../supabase_sync.js');
+    // Utiliza patchSupabase importado estaticamente
     await patchSupabase(
       'fg_whatsapp_conversations',
       { col: 'id', op: 'eq', val: phone },

@@ -3,84 +3,52 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#D4AF37">
+<link rel="manifest" href="/manifest.json">
 <title>FUMUGOLD — Omni Gateway v8.0</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Plus+Jakarta+Sans:wght@200;400;600&family=Playfair+Display:ital,wght@1,500&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 <style>
 * { margin:0; padding:0; box-sizing:border-box; cursor:none; }
-:root {
-  --gold-pure: #D4AF37; --gold-bright: #FFD700; --gold-deep: #996515;
-  --vanta: #010101; --glass: rgba(5, 5, 5, 0.5);
-}
-html, body { width:100%; height:100%; overflow:hidden; background: #000; font-family: 'Plus Jakarta Sans', sans-serif; }
-
+:root { --gold-pure:#D4AF37; --gold-bright:#FFD700; --gold-deep:#996515; }
+html,body { width:100%; height:100%; overflow:hidden; background:#000; font-family:'Plus Jakarta Sans',sans-serif; }
 #canvas-container { position:fixed; inset:0; z-index:0; }
-
-#cd { position:fixed; z-index:9999; width:6px; height:6px; background:var(--gold-bright); border-radius:50%; transform:translate(-50%,-50%); pointer-events:none; box-shadow: 0 0 15px var(--gold-pure); }
-#cr { position:fixed; z-index:9998; width:40px; height:40px; border:1px solid var(--gold-deep); border-radius:50%; transform:translate(-50%,-50%); pointer-events:none; transition: all 0.3s cubic-bezier(0.19, 1, 0.22, 1); }
-
+#cd { position:fixed; z-index:9999; width:6px; height:6px; background:var(--gold-bright); border-radius:50%; transform:translate(-50%,-50%); pointer-events:none; box-shadow:0 0 15px var(--gold-pure); }
+#cr { position:fixed; z-index:9998; width:40px; height:40px; border:1px solid var(--gold-deep); border-radius:50%; transform:translate(-50%,-50%); pointer-events:none; transition:all 0.3s cubic-bezier(0.19,1,0.22,1); }
 #header { position:fixed; top:40px; left:50px; z-index:50; opacity:0; }
-.logo { font-family:'Bebas Neue'; font-size:28px; letter-spacing:0.4em; color:var(--gold-pure); text-shadow: 0 0 30px rgba(212,175,55,0.5); }
+.logo { font-family:'Bebas Neue'; font-size:28px; letter-spacing:0.4em; color:var(--gold-pure); text-shadow:0 0 30px rgba(212,175,55,0.5); }
 .sub { font-size:8px; letter-spacing:0.5em; color:var(--gold-deep); text-transform:uppercase; margin-top:5px; font-weight:600; }
-
-#panel {
-  position:fixed; top:50%; left:50%; transform:translate(-50%, -50%) perspective(1000px); z-index:40;
-  width:440px; padding:60px; opacity:0;
-  background: rgba(10, 10, 10, 0.6);
-  border: 1px solid rgba(212, 175, 55, 0.25);
-  backdrop-filter: blur(40px) saturate(180%);
-  -webkit-backdrop-filter: blur(40px) saturate(180%);
-  border-radius: 1px;
-  box-shadow: 0 50px 100px rgba(0,0,0,0.9);
-}
-#panel::before {
-  content:''; position:absolute; top:0; left:10%; right:10%; height:1px;
-  background: linear-gradient(90deg, transparent, var(--gold-bright), transparent);
-  box-shadow: 0 0 15px var(--gold-pure);
-}
-
-.p-title { font-family: 'Playfair Display', serif; font-size:48px; color:#fff; line-height:1; margin-bottom:10px; font-weight:300; }
-.p-title em { color: var(--gold-pure); font-style:italic; }
-.p-desc { font-size:9px; letter-spacing:0.3em; color: var(--gold-deep); text-transform:uppercase; margin-bottom:40px; border-bottom: 1px solid rgba(212,175,55,0.1); padding-bottom:20px; font-weight:600; }
-
+#panel { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%) perspective(1000px); z-index:40; width:440px; padding:60px; opacity:0; background:rgba(10,10,10,0.6); border:1px solid rgba(212,175,55,0.25); backdrop-filter:blur(40px) saturate(180%); -webkit-backdrop-filter:blur(40px) saturate(180%); border-radius:1px; box-shadow:0 50px 100px rgba(0,0,0,0.9); }
+#panel::before { content:''; position:absolute; top:0; left:10%; right:10%; height:1px; background:linear-gradient(90deg,transparent,var(--gold-bright),transparent); box-shadow:0 0 15px var(--gold-pure); }
+.p-title { font-family:'Playfair Display',serif; font-size:48px; color:#fff; line-height:1; margin-bottom:10px; font-weight:300; }
+.p-title em { color:var(--gold-pure); font-style:italic; }
+.p-desc { font-size:9px; letter-spacing:0.3em; color:var(--gold-deep); text-transform:uppercase; margin-bottom:40px; border-bottom:1px solid rgba(212,175,55,0.1); padding-bottom:20px; font-weight:600; }
 .f-group { position:relative; margin-bottom:35px; opacity:0; transform:translateY(10px); }
 .f-label { display:block; font-size:8px; letter-spacing:0.2em; color:var(--gold-deep); text-transform:uppercase; margin-bottom:10px; font-weight:600; }
-.f-input { 
-  width:100%; background:transparent; border:none; border-bottom:1px solid rgba(212,175,55,0.2);
-  color:var(--gold-bright); font-size:15px; padding:10px 0; outline:none; transition:0.4s; font-family:'Plus Jakarta Sans'; font-weight:300;
-}
-.f-input:focus { border-bottom-color: var(--gold-pure); background: rgba(212,175,55,0.03); }
-
-.f-btn {
-  width:100%; padding:22px; border:1px solid var(--gold-pure); background:transparent; color:var(--gold-pure);
-  font-family:'Bebas Neue'; font-size:18px; letter-spacing:0.4em; cursor:none; transition: 0.5s; overflow:hidden; position:relative; opacity:0; transform:translateY(10px);
-}
-.f-btn:hover { background: var(--gold-pure); color: #000; box-shadow: 0 0 40px rgba(212,175,55,0.4); letter-spacing: 0.5em; }
-
+.f-input { width:100%; background:transparent; border:none; border-bottom:1px solid rgba(212,175,55,0.2); color:var(--gold-bright); font-size:15px; padding:10px 0; outline:none; transition:0.4s; font-family:'Plus Jakarta Sans'; font-weight:300; }
+.f-input:focus { border-bottom-color:var(--gold-pure); background:rgba(212,175,55,0.03); }
+.f-input.error { border-bottom-color:#ff4444; }
+.f-err { font-size:9px; letter-spacing:0.12em; color:#ff7777; text-transform:uppercase; margin-top:5px; min-height:14px; }
+.f-btn { width:100%; padding:22px; border:1px solid var(--gold-pure); background:transparent; color:var(--gold-pure); font-family:'Bebas Neue'; font-size:18px; letter-spacing:0.4em; cursor:none; transition:0.5s; overflow:hidden; position:relative; opacity:0; transform:translateY(10px); }
+.f-btn:hover:not(:disabled) { background:var(--gold-pure); color:#000; box-shadow:0 0 40px rgba(212,175,55,0.4); letter-spacing:0.5em; }
+.f-btn:disabled { opacity:0.5; }
 #loader { position:fixed; inset:0; background:#000; z-index:1000; display:flex; flex-direction:column; align-items:center; justify-content:center; }
-.l-text { font-family:'Bebas Neue'; font-size:30px; letter-spacing:0.6em; color:var(--gold-pure); animation: pulse 1.5s infinite; }
-@keyframes pulse { 0%, 100% { opacity:0.3; } 50% { opacity:1; } }
-
-#warp-status {
-  position:fixed; bottom:10vh; left:50%; transform:translateX(-50%);
-  z-index:90; opacity:0; pointer-events:none;
-  font-family:'Bebas Neue'; font-size:12px; letter-spacing:1em;
-  color:var(--gold-bright); text-transform:uppercase;
-  animation: warp-blink 0.8s steps(2) infinite;
-  text-shadow: 0 0 10px var(--gold-pure);
-}
-#warp-status.active { opacity:1; transition: opacity 1s ease 1s; }
-@keyframes warp-blink { to { visibility:hidden; } }
+.l-text { font-family:'Bebas Neue'; font-size:30px; letter-spacing:0.6em; color:var(--gold-pure); animation:pulse 1.5s infinite; }
+@keyframes pulse { 0%,100%{opacity:0.3} 50%{opacity:1} }
+#warp-status { position:fixed; bottom:10vh; left:50%; transform:translateX(-50%); z-index:90; opacity:0; pointer-events:none; font-family:'Bebas Neue'; font-size:12px; letter-spacing:1em; color:var(--gold-bright); text-transform:uppercase; animation:warp-blink 0.8s steps(2) infinite; text-shadow:0 0 10px var(--gold-pure); }
+#warp-status.active { opacity:1; transition:opacity 1s ease 1s; }
+@keyframes warp-blink { to{visibility:hidden} }
+#offline-badge { position:fixed; top:16px; right:20px; z-index:200; background:rgba(212,175,55,0.15); border:1px solid rgba(212,175,55,0.3); color:var(--gold-deep); font-size:8px; letter-spacing:0.2em; text-transform:uppercase; padding:4px 10px; border-radius:2px; opacity:0; transition:opacity 0.4s; }
+#offline-badge.show { opacity:1; }
+#auth-status { font-size:10px; letter-spacing:0.1em; margin-top:10px; text-transform:uppercase; color:#9fb0c8; min-height:14px; }
 </style>
 </head>
 <body>
 
 <div id="loader"><div class="l-text">FUMUGOLD</div></div>
-
 <div id="canvas-container"></div>
-
 <div id="cd"></div><div id="cr"></div>
+<div id="offline-badge">Modo Offline</div>
 
 <div id="header">
   <div class="logo">FUMUGOLD</div>
@@ -90,212 +58,242 @@ html, body { width:100%; height:100%; overflow:hidden; background: #000; font-fa
 <div id="panel">
   <div class="p-title">Imperial<br><em>Access</em></div>
   <div class="p-desc">Protocolo de Segurança Ativo • Angola 2025</div>
-  
   <div class="f-group u-anim">
-    <label class="f-label">Identificação de Elite</label>
-    <input type="text" class="f-input" placeholder="OPERADOR_OURO" id="uid">
+    <label class="f-label">E-mail Institucional</label>
+    <input type="email" class="f-input" placeholder="operador@clinica.ao" id="uid" autocomplete="email">
+    <div class="f-err" id="err-uid"></div>
   </div>
-  
   <div class="f-group u-anim">
-    <label class="f-label">Cripto-Chave Neural</label>
-    <input type="password" class="f-input" placeholder="••••••••••••" id="pwd">
+    <label class="f-label">Palavra-passe</label>
+    <input type="password" class="f-input" placeholder="••••••••••••" id="pwd" autocomplete="current-password">
+    <div class="f-err" id="err-pwd"></div>
   </div>
-  
   <button class="f-btn u-anim" id="btn-login"><span>Entrar no Sistema</span></button>
 </div>
 
 <div id="warp-status">FTL JUMP ACTIVE • REDIRECTING</div>
+<div id="auth-status"></div>
 
-<script>
-const scene = new THREE.Scene();
-scene.fog = new THREE.FogExp2(0x000000, 0.01);
+<script type="module">
+import * as THREE from 'three';
 
-const camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.1, 1000);
-camera.position.z = 18;
+const authStatus = document.getElementById('auth-status');
+const loginBtn = document.getElementById('btn-login');
 
-const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" });
-renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.3;
-document.getElementById('canvas-container').appendChild(renderer.domElement);
-
-const ambient = new THREE.AmbientLight(0xffffff, 0.3);
-scene.add(ambient);
-
-const frontLight = new THREE.DirectionalLight(0xffffff, 2.5);
-frontLight.position.set(2, 5, 10);
-scene.add(frontLight);
-
-const fillLight = new THREE.PointLight(0xD4AF37, 1.5, 30);
-fillLight.position.set(-8, -5, 5);
-scene.add(fillLight);
-
-const pmremGenerator = new THREE.PMREMGenerator(renderer);
-(() => {
-  const ew=256, eh=128, d=new Float32Array(ew*eh*4);
-  for(let y=0;y<eh;y++) for(let x=0;x<ew;x++){
-    const i=(y*ew+x)*4, u=x/ew, v=y/eh;
-    const k=Math.exp(-((u-.2)**2+(v-.3)**2)*20)*2;
-    const f=Math.exp(-((u-.7)**2+(v-.6)**2)*15)*1.5;
-    d[i]=k*1.1+f*.8; d[i+1]=k*.85+f*.85; d[i+2]=k*.2+f*.9; d[i+3]=1;
-  }
-  const t=new THREE.DataTexture(d,ew,eh,THREE.RGBAFormat,THREE.FloatType);
-  t.mapping=THREE.EquirectangularReflectionMapping; t.needsUpdate=true;
-  scene.environment = pmremGenerator.fromEquirectangular(t).texture;
-  t.dispose(); pmremGenerator.dispose();
-})();
-
-const goldMat = new THREE.MeshPhysicalMaterial({
-  color: 0xD4AF37, metalness: 1.0, roughness: 0.08,
-  clearcoat: 1.0, clearcoatRoughness: 0.05,
-  emissive: 0x442200, emissiveIntensity: 0.4,
-  envMapIntensity: 2.5
-});
-
-function createDNA(x) {
-  const group = new THREE.Group();
-  for (let i = 0; i < 60; i++) {
-    const t = i / 60;
-    const angle = t * Math.PI * 6;
-    const y = (t - 0.5) * 15;
-    const s1 = new THREE.Mesh(new THREE.SphereGeometry(0.2, 24, 24), goldMat);
-    s1.position.set(Math.cos(angle)*2, y, Math.sin(angle)*2); group.add(s1);
-    const s2 = new THREE.Mesh(new THREE.SphereGeometry(0.2, 24, 24), goldMat);
-    s2.position.set(Math.cos(angle + Math.PI)*2, y, Math.sin(angle + Math.PI)*2); group.add(s2);
-    if (i%2===0) {
-      const line = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 4), goldMat);
-      line.position.set(0, y, 0); line.rotation.z = Math.PI/2; line.rotation.y = -angle; group.add(line);
-    }
-  }
-  group.position.x = x; return group;
+function setStatus(msg, isError = false) {
+  authStatus.textContent = msg;
+  authStatus.style.color = isError ? '#ff6b6b' : '#9fb0c8';
+  authStatus.style.fontSize = '10px';
+  authStatus.style.letterSpacing = '0.1em';
+  authStatus.style.marginTop = '10px';
+  authStatus.style.textTransform = 'uppercase';
+  console.log('[Auth]', msg);
 }
-const dnaL = createDNA(-6); const dnaR = createDNA(6);
-scene.add(dnaL, dnaR);
 
-const starCount = 6000;
-const starGeo = new THREE.BufferGeometry();
-const starPos = new Float32Array(starCount * 3);
-for(let i=0; i < starCount * 3; i++) {
-  starPos[i] = (Math.random() - 0.5) * 120;
-  if(i%3 === 2) starPos[i] = Math.random() * -1000;
-}
-starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
-const starMat = new THREE.PointsMaterial({
-  color: 0xffffff, size: 0.25, transparent: true, opacity: 0,
-  blending: THREE.AdditiveBlending, sizeAttenuation: true
-});
-const starField = new THREE.Points(starGeo, starMat);
-scene.add(starField);
+let supabase = null;
+let authReady = false;
 
-let mX = 0, mY = 0;
-let isFTL = false;
-let warpAcceleration = 0.01;
+async function initSupabase() {
+  setStatus('A ligar ao servidor...');
+  loginBtn.disabled = true;
 
-document.addEventListener('mousemove', (e) => {
-  mX = (e.clientX - window.innerWidth/2) * 0.005;
-  mY = (e.clientY - window.innerHeight/2) * 0.005;
-  gsap.to("#cd", { x: e.clientX, y: e.clientY, duration: 0 });
-  gsap.to("#cr", { x: e.clientX, y: e.clientY, duration: 0.2 });
-});
+  const SUPA_URL = import.meta.env?.VITE_SUPABASE_URL || localStorage.getItem('fg_supabase_url');
+  const SUPA_KEY = import.meta.env?.VITE_SUPABASE_ANON_KEY || localStorage.getItem('fg_supabase_key');
 
-function animate() {
-  requestAnimationFrame(animate);
-  const t = Date.now() * 0.001;
-  
-  camera.position.x += (mX - camera.position.x) * 0.05;
-  camera.position.y += (-mY - camera.position.y) * 0.05;
-  
-  if (isFTL) {
-    warpAcceleration = THREE.MathUtils.lerp(warpAcceleration, 25, 0.01);
-    
-    const positions = starField.geometry.attributes.position.array;
-    for(let i=0; i < starCount; i++) {
-      positions[i*3 + 2] += warpAcceleration;
-      if(positions[i*3 + 2] > 20) {
-        positions[i*3 + 2] = -1000;
-        positions[i*3] = (Math.random() - 0.5) * 120;
-        positions[i*3+1] = (Math.random() - 0.5) * 120;
-      }
-    }
-    starField.geometry.attributes.position.needsUpdate = true;
-    
-    camera.fov = THREE.MathUtils.lerp(camera.fov, 140, 0.005); 
-    camera.updateProjectionMatrix();
-
-  } else {
-    dnaL.rotation.y = t * 0.3; dnaR.rotation.y = -t * 0.3;
-    dnaL.position.y = Math.sin(t*0.5)*0.3; dnaR.position.y = Math.cos(t*0.5)*0.3;
-  }
-  
-  camera.lookAt(0,0,0);
-  renderer.render(scene, camera);
-}
-animate();
-
-window.onload = () => {
-  gsap.to("#loader", { opacity: 0, duration: 1.5, display: "none" });
-  const tl = gsap.timeline();
-  tl.to("#header", { opacity: 1, y: 0, duration: 1 })
-    .to("#panel", { opacity: 1, scale: 1, duration: 1.2, ease: "expo.out" }, "-=0.5")
-    .to(".u-anim", { opacity: 1, y: 0, stagger: 0.15, duration: 0.8, ease:"back.out(1.7)" }, "-=0.8");
-};
-
-document.addEventListener('mousemove', e => {
-  const rx=(window.innerWidth/2-e.pageX)/35, ry=(window.innerHeight/2-e.pageY)/35;
-  gsap.to("#panel", { rotateY:rx, rotateX:-ry, duration: 0.6 });
-});
-
-document.querySelectorAll('input, button').forEach(el => {
-  el.addEventListener('mouseenter', ()=>document.getElementById('cr').style.width='55px');
-  el.addEventListener('mouseleave', ()=>document.getElementById('cr').style.width='40px');
-});
-
-function doLogin() {
-  const uid = document.getElementById('uid').value.trim();
-  const btn = document.getElementById('btn-login');
-
-  if(uid === "") {
-    gsap.to("#panel", {x:10, duration:0.1, yoyo:true, repeat:3, onComplete:()=>gsap.set("#panel",{x:0})});
+  if (!SUPA_URL || !SUPA_KEY) {
+    setStatus('Modo offline activo - sem servidor configurado');
+    authReady = true;
+    loginBtn.disabled = false;
     return;
   }
 
-  btn.innerHTML = "<span>VERIFICANDO CHAVE NEURAL...</span>";
-  btn.style.borderColor = "#fff";
-  gsap.to(goldMat, { emissiveIntensity: 2, duration: 0.2, yoyo:true, repeat:3 });
+  try {
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Tempo esgotado')), 8000)
+    );
 
-  setTimeout(() => {
-    btn.innerHTML = "<span>ACESSO AUTORIZADO • BEM-VINDO</span>";
-    btn.style.background = "var(--gold-pure)";
-    btn.style.color = "#000";
+    const importPromise = import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm');
+    const { createClient } = await Promise.race([importPromise, timeoutPromise]);
 
-    const tl = gsap.timeline();
-    tl.to("#panel", { opacity: 0, scale: 1.3, duration: 1, ease: "expo.in" }, "+=0.5")
-      .to("#header", { opacity: 0, y: -20, duration: 0.7 }, "-=0.8")
-      .to(goldMat, { emissiveIntensity: 0, opacity: 0, duration: 0.8 }, "-=0.3")
-      .add(() => {
-        isFTL = true;
-        dnaL.visible = dnaR.visible = false;
-        document.getElementById('warp-status').classList.add('active');
-      }, "-=0.3")
-      .to(starMat, { opacity: 1, duration: 0.3 }, "-=0.2")
-      .add(() => {
-        setTimeout(() => {
-          window.location.href = "./";
-        }, 4000); 
-      }, "+=1");
+    supabase = createClient(SUPA_URL, SUPA_KEY, {
+      auth: { persistSession: true, autoRefreshToken: true, storageKey: 'fg_sb_auth' }
+    });
 
-  }, 1800);
+    const { error } = await supabase.auth.getSession();
+    if (error) throw error;
+
+    authReady = true;
+    setStatus('Sistema pronto.');
+    loginBtn.disabled = false;
+
+  } catch (e) {
+    console.error('[Auth] Falha crítica:', e);
+    setStatus('Falha de conexão. Verifique a internet e atualize a página.', true);
+    loginBtn.disabled = true;
+  }
 }
 
-document.getElementById('btn-login').addEventListener('click', doLogin);
-document.querySelectorAll('input').forEach(i=>i.addEventListener('keypress',e=>{if(e.key==='Enter')doLogin();}));
+initSupabase().then(() => {
 
-window.addEventListener('resize', () => {
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
-});
+  window.addEventListener('offline', () => document.getElementById('offline-badge').classList.add('show'));
+  window.addEventListener('online',  () => document.getElementById('offline-badge').classList.remove('show'));
+  if (!navigator.onLine) document.getElementById('offline-badge').classList.add('show');
+
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  }
+
+  const scene = new THREE.Scene();
+  scene.fog = new THREE.FogExp2(0x000000, 0.01);
+  const camera = new THREE.PerspectiveCamera(40, innerWidth/innerHeight, 0.1, 1000);
+  camera.position.z = 18;
+  const renderer = new THREE.WebGLRenderer({ antialias:true, alpha:true, powerPreference:'high-performance' });
+  renderer.setSize(innerWidth, innerHeight);
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.3;
+  document.getElementById('canvas-container').appendChild(renderer.domElement);
+  scene.add(new THREE.AmbientLight(0xffffff, 0.3));
+  const fl = new THREE.DirectionalLight(0xffffff, 2.5); fl.position.set(2,5,10); scene.add(fl);
+  const pl = new THREE.PointLight(0xD4AF37, 1.5, 30); pl.position.set(-8,-5,5); scene.add(pl);
+  const pmr = new THREE.PMREMGenerator(renderer);
+  (() => {
+    const ew=256,eh=128,d=new Float32Array(ew*eh*4);
+    for(let y=0;y<eh;y++) for(let x=0;x<ew;x++){
+      const i=(y*ew+x)*4,u=x/ew,v=y/eh;
+      const k=Math.exp(-((u-.2)**2+(v-.3)**2)*20)*2;
+      const f=Math.exp(-((u-.7)**2+(v-.6)**2)*15)*1.5;
+      d[i]=k*1.1+f*.8;d[i+1]=k*.85+f*.85;d[i+2]=k*.2+f*.9;d[i+3]=1;
+    }
+    const t=new THREE.DataTexture(d,ew,eh,THREE.RGBAFormat,THREE.FloatType);
+    t.mapping=THREE.EquirectangularReflectionMapping;t.needsUpdate=true;
+    scene.environment=pmr.fromEquirectangular(t).texture;t.dispose();pmr.dispose();
+  })();
+  const goldMat = new THREE.MeshPhysicalMaterial({ color:0xD4AF37,metalness:1,roughness:0.08,clearcoat:1,clearcoatRoughness:0.05,emissive:0x442200,emissiveIntensity:0.4,envMapIntensity:2.5 });
+  function mkDNA(x){
+    const g=new THREE.Group();
+    for(let i=0;i<60;i++){
+      const t=i/60,a=t*Math.PI*6,y=(t-.5)*15;
+      const s1=new THREE.Mesh(new THREE.SphereGeometry(0.2,24,24),goldMat);
+      s1.position.set(Math.cos(a)*2,y,Math.sin(a)*2);g.add(s1);
+      const s2=new THREE.Mesh(new THREE.SphereGeometry(0.2,24,24),goldMat);
+      s2.position.set(Math.cos(a+Math.PI)*2,y,Math.sin(a+Math.PI)*2);g.add(s2);
+      if(i%2===0){const l=new THREE.Mesh(new THREE.CylinderGeometry(0.02,0.02,4),goldMat);l.position.set(0,y,0);l.rotation.z=Math.PI/2;l.rotation.y=-a;g.add(l);}
+    }
+    g.position.x=x;return g;
+  }
+  const dnaL=mkDNA(-6),dnaR=mkDNA(6);
+  scene.add(dnaL,dnaR);
+  const sc=6000,sg=new THREE.BufferGeometry(),sp=new Float32Array(sc*3);
+  for(let i=0;i<sc*3;i++){sp[i]=(Math.random()-.5)*120;if(i%3===2)sp[i]=Math.random()*-1000;}
+  sg.setAttribute('position',new THREE.BufferAttribute(sp,3));
+  const starMat=new THREE.PointsMaterial({color:0xffffff,size:0.25,transparent:true,opacity:0,blending:THREE.AdditiveBlending,sizeAttenuation:true});
+  const stars=new THREE.Points(sg,starMat);scene.add(stars);
+  let mX=0,mY=0,isFTL=false,warpAcc=0.01;
+  addEventListener('mousemove',e=>{
+    mX=(e.clientX-innerWidth/2)*0.005;mY=(e.clientY-innerHeight/2)*0.005;
+    gsap.to('#cd',{x:e.clientX,y:e.clientY,duration:0});
+    gsap.to('#cr',{x:e.clientX,y:e.clientY,duration:0.2});
+  });
+  function animate(){
+    requestAnimationFrame(animate);
+    const t=Date.now()*.001;
+    camera.position.x+=(mX-camera.position.x)*.05;
+    camera.position.y+=(-mY-camera.position.y)*.05;
+    if(isFTL){
+      warpAcc=THREE.MathUtils.lerp(warpAcc,25,.01);
+      const p=stars.geometry.attributes.position.array;
+      for(let i=0;i<sc;i++){p[i*3+2]+=warpAcc;if(p[i*3+2]>20){p[i*3+2]=-1000;p[i*3]=(Math.random()-.5)*120;p[i*3+1]=(Math.random()-.5)*120;}}
+      stars.geometry.attributes.position.needsUpdate=true;
+      camera.fov=THREE.MathUtils.lerp(camera.fov,140,.005);camera.updateProjectionMatrix();
+    } else {
+      dnaL.rotation.y=t*.3;dnaR.rotation.y=-t*.3;
+      dnaL.position.y=Math.sin(t*.5)*.3;dnaR.position.y=Math.cos(t*.5)*.3;
+    }
+    camera.lookAt(0,0,0);renderer.render(scene,camera);
+  }
+  animate();
+
+  window.onload=()=>{
+    gsap.to('#loader',{opacity:0,duration:1.5,display:'none'});
+    gsap.timeline()
+      .to('#header',{opacity:1,y:0,duration:1})
+      .to('#panel',{opacity:1,scale:1,duration:1.2,ease:'expo.out'},'-=0.5')
+      .to('.u-anim',{opacity:1,y:0,stagger:0.15,duration:0.8,ease:'back.out(1.7)'},'-=0.8');
+  };
+  addEventListener('mousemove',e=>{
+    gsap.to('#panel',{rotateY:(innerWidth/2-e.pageX)/35,rotateX:-(innerHeight/2-e.pageY)/35,duration:0.6});
+  });
+  document.querySelectorAll('input,button').forEach(el=>{
+    el.addEventListener('mouseenter',()=>document.getElementById('cr').style.width='55px');
+    el.addEventListener('mouseleave',()=>document.getElementById('cr').style.width='40px');
+  });
+
+  function clrErr(){ ['uid','pwd'].forEach(id=>{document.getElementById(id).classList.remove('error');document.getElementById('err-'+id).textContent='';}); }
+  function setErr(id,msg){
+    document.getElementById(id).classList.add('error');
+    document.getElementById('err-'+id).textContent=msg;
+    gsap.to('#panel',{x:8,duration:0.07,yoyo:true,repeat:5,onComplete:()=>gsap.set('#panel',{x:0})});
+  }
+
+  async function doLogin(){
+    if (!authReady || !supabase) {
+      setStatus('Aguarde, sistema ainda a iniciar...', true);
+      return;
+    }
+
+    clrErr();
+    const email=document.getElementById('uid').value.trim();
+    const pwd=document.getElementById('pwd').value;
+    const btn=document.getElementById('btn-login');
+    if(!email){setErr('uid','E-mail obrigatório');return;}
+    if(!email.includes('@')){setErr('uid','E-mail inválido');return;}
+    if(!pwd){setErr('pwd','Palavra-passe obrigatória');return;}
+
+    btn.disabled=true;
+    btn.innerHTML='<span>VERIFICANDO...</span>';
+    btn.style.borderColor='#fff';
+    gsap.to(goldMat,{emissiveIntensity:2,duration:0.2,yoyo:true,repeat:3});
+
+    if(supabase){
+      const {data,error}=await supabase.auth.signInWithPassword({email,password:pwd});
+      if(error){
+        btn.disabled=false;btn.innerHTML='<span>Entrar no Sistema</span>';btn.style.borderColor='';
+        const msgs={'Invalid login credentials':'E-mail ou palavra-passe incorrectos','Email not confirmed':'E-mail não confirmado','Too many requests':'Demasiadas tentativas — aguarda'};
+        setErr('pwd',msgs[error.message]||error.message);
+        return;
+      }
+    } else {
+      localStorage.setItem('fg_session',JSON.stringify({token:crypto.randomUUID(),user:email,createdAt:Date.now(),_dev:true}));
+    }
+
+    btn.innerHTML='<span>ACESSO AUTORIZADO</span>';
+    btn.style.background='var(--gold-pure)';btn.style.color='#000';
+
+    gsap.timeline()
+      .to('#panel',{opacity:0,scale:1.3,duration:1,ease:'expo.in'},'+=0.5')
+      .to('#header',{opacity:0,y:-20,duration:0.7},'-=0.8')
+      .to(goldMat,{emissiveIntensity:0,duration:0.8},'-=0.3')
+      .add(()=>{ isFTL=true;dnaL.visible=dnaR.visible=false;document.getElementById('warp-status').classList.add('active'); },'-=0.3')
+      .to(starMat,{opacity:1,duration:0.3},'-=0.2')
+      .add(()=>{
+        setTimeout(()=>{
+          window.location.href='./index.html?app=true';
+        },4000);
+      },'+=1');
+  }
+
+  document.getElementById('btn-login').addEventListener('click',doLogin);
+  document.querySelectorAll('input').forEach(i=>{
+    i.addEventListener('keypress',e=>{if(e.key==='Enter')doLogin();});
+    i.addEventListener('input',()=>{i.classList.remove('error');document.getElementById('err-'+i.id).textContent='';});
+  });
+  addEventListener('resize',(){
+    camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();
+    renderer.setSize(innerWidth,innerHeight);
+  });
+
+}); // fecha .then()
 </script>
 </body>
 </html>

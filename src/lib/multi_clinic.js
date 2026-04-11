@@ -4,7 +4,7 @@
 // RLS via Supabase Row-Level Security
 // Zero impacto no V3 visual
 // ═══════════════════════════════════════════════════════════
-
+import { fetchFromSupabase, patchSupabase } from '../supabase_sync.js';
 // ── Constantes ────────────────────────────────────────────
 const CLINIC_KEY    = 'fg_clinic_id';
 const CLINIC_META   = 'fg_clinic_meta';
@@ -113,7 +113,7 @@ export function clinicHeaders(baseHeaders = {}) {
 // Leitura do Supabase com filtro clinic_id automático
 export async function fetchClinicData(table, opts = {}) {
   // B1-FIX: path corrigido de './supabase_sync.js' para '../supabase_sync.js'
-  const { fetchFromSupabase } = await import('../supabase_sync.js').catch(() => ({}));
+  // dynamic import removed
   if (!fetchFromSupabase) return [];
 
   const cid = getClinicId();
@@ -162,7 +162,7 @@ export function migrateLocalData() {
 // Para plataformas SaaS — lista clínicas do Supabase
 export async function listClinics() {
   try {
-    const { fetchFromSupabase } = await import('../supabase_sync.js');
+    // dynamic import removed
     return fetchFromSupabase('fg_clinics', {
       select: 'id,data',
       orderBy: { col: 'updated_at', asc: false },
@@ -178,7 +178,7 @@ export async function createClinic(meta) {
 
   try {
     // B1-FIX: path corrigido
-    const { patchSupabase } = await import('../supabase_sync.js');
+    // dynamic import removed
     await patchSupabase('fg_clinics', { col: 'id', op: 'eq', val: id }, {
       id,
       data: clinic,
